@@ -1,8 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define max 100
-
 typedef enum {
     NORMAL,
     BRANCA,
@@ -12,11 +10,27 @@ typedef enum {
 typedef struct {
     int linhas;
     int colunas;
-    char tabuleiro[max][max];
-    State estado[max][max];
-    } Game;
+    char **tabuleiro;
+    State **estado;
+} Game;
 
-typedef void (*CommandFunction)(Game *game, char *args);
+typedef struct {
+    char tipo;       
+    char coluna;     
+    int linha;       
+    char valorAntigo; 
+    State estadoAntigo; 
+} Move;
+
+typedef struct {
+    Move *lista;    
+    int tamanho;    
+    int capacidade; 
+} Moves;
+
+
+
+typedef void (*CommandFunction)(Game *game, char *args, Moves *moves);
 
 typedef struct {
     char letra;
@@ -24,12 +38,15 @@ typedef struct {
     int needs_args;
 } Command;
 
-
-Game initializeGame();
-void printTab(char tabuleiro[max][max], int linhas, int colunas);
+Game* initializeGame(int linhas, int colunas);
+void freeGame(Game *game);
+void printTab(Game *game);
 void paint(Game *game, char coluna, int linha);
 void crossout(Game *game, char coluna, int linha);
+void restore(Game *game, Moves *historico);
+void verify(Game *game);
 void loadGame(Game *game, const char *ficheiro);
 void saveGame(Game *game, const char *ficheiro);
+
 
 #endif
