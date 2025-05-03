@@ -18,6 +18,11 @@ Moves* initMoves() {
     return moves;
 }
 
+void freeMoves(Moves *moves) {
+    free(moves->lista); // Libera a memória da lista de movimentos
+    free(moves); // Libera a memória do histórico
+}
+
 
 // Função para adicionar um movimento ao histórico
 void adicionarMove(Moves *moves, char tipo, char coluna, int linha, char valorAntigo, State estadoAntigo) {
@@ -200,6 +205,8 @@ int main() {
         printTab(game); // Imprime o estado atual do tabuleiro
     }
 
+
     freeGame(game); // Libera a memória do jogo
+    freeMoves(historico); // Libera a memória do histórico
     return 0;
 }

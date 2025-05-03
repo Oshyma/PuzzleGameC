@@ -235,97 +235,134 @@ bool areNeighborsWhite(Game *game, int row, int col) {
     return true;  // Retorna verdadeiro se todos os vizinhos forem BRANCA
 }
 
-// Função para verificar se as células brancas estão conectadas ortogonalmente
-bool isConnected(Game *game, int row, int col, bool **visited) {
-    if (row < 0 || row >= game->linhas || col < 0 || col >= game->colunas || visited[row][col] || game->estado[row][col] != BRANCA) {
-        return false;  // Retorna falso se a célula não for válida ou já visitada
-    }
-    visited[row][col] = true;
-
-    int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};  // Direções dos vizinhos
+// Função auxiliar para verificar se todas as casas vizinhas de uma célula riscada estão pintadas de branco
+bool areCrossedOutNeighborsWhite(Game *game, int row, int col) {
+    int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
     for (int d = 0; d < 4; d++) {
         int newRow = row + directions[d][0];
         int newCol = col + directions[d][1];
         if (newRow >= 0 && newRow < game->linhas && newCol >= 0 && newCol < game->colunas) {
-            isConnected(game, newRow, newCol, visited);  // Chama recursivamente para os vizinhos
+            if (game->estado[newRow][newCol] != BRANCA) {
+                printf("Warning: Vizinho não branco encontrado em (%c, %d)\n", newCol + 'a', newRow + 1);
+                return false; // Retorna falso se algum vizinho não for BRANCA
+            }
         }
     }
-    return true;  // Retorna verdadeiro se todas as células conectadas forem visitadas
+    return true; // Retorna verdadeiro se todos os vizinhos forem BRANCA
 }
 
-// Função que verifica se todas as células brancas estão conectadas ortogonalmente
-bool checkAllConnected(Game *game) {
-    // Aloca uma matriz para rastrear as células visitadas
-    bool **visited = malloc(game->linhas * sizeof(bool *));
-    for (int i = 0; i < game->linhas; i++) {
-        visited[i] = calloc(game->colunas, sizeof(bool));  // Inicializa as células como não visitadas
+// Função auxiliar para verificar conectividade de células brancas usando BFS
+bool checkWhiteCellsConnectivity(Game *game, bool **visited, int totalWhiteCells) {
+    int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    int queueSize = game->linhas * game->colunas;
+    int *queueRow = malloc(queueSize * sizeof(int));
+    int *queueCol = malloc(queueSize * sizeof(int));
+    int front = 0, rear = 0;
+    int visitedCount = 0;
+
+    // Encontrar a primeira célula branca
+    int startRow = -1, startCol = -1;
+    for (int i = 0; i < game->linhas && startRow == -1; i++) {
+        for (int j = 0; j < game->colunas; j++) {
+            if (game->estado[i][j] != RISCADA) {
+                startRow = i;
+                startCol = j;
+                break;
+            }
+        }
     }
 
-    bool foundFirstWhite = false;  // Flag para indicar se a primeira célula branca foi encontrada
-    // Itera sobre o tabuleiro para encontrar as células brancas
-    for (int i = 0; i < game->linhas; i++) {
-        for (int j = 0; j < game->colunas; j++) {
-            if (game->estado[i][j] == BRANCA) {  // Verifica se a célula é branca
-                if (!foundFirstWhite) {
-                    isConnected(game, i, j, visited);  // Chama a função recursiva para marcar as células conectadas
-                    foundFirstWhite = true;  // Marca que a primeira célula branca foi encontrada
-                } else if (!visited[i][j]) {  // Se encontrar uma célula branca desconectada
-                    // Libera a memória usada pela matriz visited
-                    for (int k = 0; k < game->linhas; k++) free(visited[k]);
-                    free(visited);
-                    return false;  // Retorna falso se as células não estão todas conectadas
+    // Adicionar a célula inicial à fila
+    queueRow[rear] = startRow;
+    queueCol[rear++] = startCol;
+    visited[startRow][startCol] = true;
+
+    while (front < rear) {
+        int currentRow = queueRow[front];
+        int currentCol = queueCol[front++];
+        visitedCount++;
+
+        // Verificar vizinhos ortogonais
+        for (int d = 0; d < 4; d++) {
+            int newRow = currentRow + directions[d][0];
+            int newCol = currentCol + directions[d][1];
+            if (newRow >= 0 && newRow < game->linhas && newCol >= 0 && newCol < game->colunas) {
+                if (!visited[newRow][newCol] && game->estado[newRow][newCol] != RISCADA) {
+                    visited[newRow][newCol] = true;
+                    queueRow[rear] = newRow;
+                    queueCol[rear++] = newCol;
                 }
             }
         }
     }
 
-    // Libera a memória da matriz visited
+    free(queueRow);
+    free(queueCol);
+
+    return visitedCount == totalWhiteCells;
+}
+
+// Função principal para verificar conectividade e vizinhos de casas riscadas
+bool areAllWhiteCellsConnected(Game *game) {
+    int totalWhiteCells = 0;
+
+    // Alocar matriz para rastrear células visitadas
+    bool **visited = malloc(game->linhas * sizeof(bool *));
+    for (int i = 0; i < game->linhas; i++) {
+        visited[i] = calloc(game->colunas, sizeof(bool));
+    }
+
+    // Contar células brancas e verificar vizinhos de casas riscadas
+    for (int i = 0; i < game->linhas; i++) {
+        for (int j = 0; j < game->colunas; j++) {
+            if (game->estado[i][j] == RISCADA) {
+                if (!areCrossedOutNeighborsWhite(game, i, j)) {
+                    for (int k = 0; k < game->linhas; k++) free(visited[k]);
+                    free(visited);
+                    return false; // Retorna falso se alguma casa riscada tiver vizinhos não brancos
+                }
+            } else if (game->estado[i][j] != RISCADA) {
+                totalWhiteCells++;
+            }
+        }
+    }
+
+    // Verificar conectividade das células brancas
+    bool connected = checkWhiteCellsConnectivity(game, visited, totalWhiteCells);
+
+    // Liberar memória da matriz visited
     for (int i = 0; i < game->linhas; i++) free(visited[i]);
     free(visited);
 
-    return true;  // Retorna verdadeiro se todas as células brancas estão conectadas
+    return connected;
 }
-
 // Função que verifica se o estado do jogo é válido
 void verify(Game *game) {
     bool valid = true;  // Inicializa a variável de validade do jogo
-
-    /*
-    bool unique = true;
-    bool neighbors = true;
-    bool allConnected = true;
-    */
-    
-    // Verifica cada célula no tabuleiro
+    // Verificar unicidade de símbolos e vizinhos de células riscadas
     for (int i = 0; i < game->linhas; i++) {
         for (int j = 0; j < game->colunas; j++) {
-            char symbol = game->tabuleiro[i][j];  // Obtém o símbolo da célula
-            if (game->estado[i][j] == BRANCA) {  // Se a célula for branca
-                // Verifica se o símbolo é único na linha e na coluna
+            char symbol = game->tabuleiro[i][j];
+            if (game->estado[i][j] == BRANCA) {
                 if (!isUniqueInRow(game, i, symbol) || !isUniqueInColumn(game, j, symbol)) {
                     printf("Warning: símbolo '%c' repetido na linha %d ou coluna %c.\n", symbol, i + 1, j + 'a');
-                    valid = false;  // Marca o jogo como inválido
-                    //unique = false;
+                    valid = false;
                 }
-            } else if (game->estado[i][j] == RISCADA) {  // Se a célula for riscada
-                // Verifica se a célula riscada tem vizinhos não brancos
+            } else if (game->estado[i][j] == RISCADA) {
                 if (!areNeighborsWhite(game, i, j)) {
                     printf("Warning: casa riscada (%c, %d) tem vizinhos não pintados de branco.\n", j + 'a', i + 1);
-                    valid = false;  // Marca o jogo como inválido
-                    //neighbors = false;
+                    valid = false;
                 }
             }
         }
     }
 
-    // Verifica se todas as células brancas estão conectadas
-    if (!checkAllConnected(game)) {
+    // Verificar conectividade de células brancas
+    if (!areAllWhiteCellsConnected(game)) {
         printf("Warning: casas brancas não estão conectadas ortogonalmente.\n");
-        valid = false;  // Marca o jogo como inválido
-        // allConnected = false;
+        valid = false;
     }
 
-    // Imprime a validade do jogo
     if (valid) {
         printf("O estado do jogo é válido.\n");
     }

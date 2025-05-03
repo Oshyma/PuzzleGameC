@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <stdbool.h>
+
 typedef enum {
     NORMAL,
     BRANCA,
@@ -47,6 +49,6 @@ void restore(Game *game, Moves *historico);
 void verify(Game *game);
 void loadGame(Game *game, const char *ficheiro);
 void saveGame(Game *game, const char *ficheiro);
-
+bool areAllWhiteCellsConnected(Game *game);
 
 #endif
