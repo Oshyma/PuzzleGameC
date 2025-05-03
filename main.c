@@ -140,7 +140,22 @@ void verify_wrapper(Game *game, char *args, Moves *historico) {
     verify(game); // Chama a função verify
 }
 
+void help_wrapper(Game *game, char *args, Moves *historico) {
+    (void)args; // Parâmetro args não é utilizado
+    (void)historico; // Parâmetro historico não é utilizado
+    help(game); // Chama a função help
+}
 
+void autohelp_wrapper(Game *game, char *args, Moves *historico) {
+    (void)args; // Parâmetro args não é utilizado
+    (void)historico; // Parâmetro historico não é utilizado
+    autohelp(game); // Chama a função autohelp
+}
+
+void solveGame_wrapper(Game *game, char *args, Moves *historico) {
+    (void)args; // Parâmetro args não é utilizado
+    solveGame(game, historico); // Chama a função solveGame
+}
 // MAIN FUNCS
 // Função para processar os comandos do jogo
 void commandProcess(Game *game, char *input, Moves *historico) {
@@ -152,9 +167,9 @@ void commandProcess(Game *game, char *input, Moves *historico) {
         { 'l', loadGame_wrapper, 1 }, // Comando para carregar um jogo
         { 'g', saveGame_wrapper, 1 }, // Comando para salvar o jogo
         { 'v', verify_wrapper, 0 }, // Comando para verificar o estado do jogo
-        // { 'a', help, 0 },
-        // { 'A', enableHelp, 0 },
-        // { 'R', solve, 0 },
+        { 'a', help_wrapper, 0 }, // Comando para ajudar a resolver o jogo
+        { 'A', autohelp_wrapper, 0 }, // Comando para ajudar automaticamente
+        { 'R', solveGame_wrapper, 0 }, // Comando para resolver o jogo
         { 'd', restore_wrapper, 0 }, // Comando para restaurar o jogo
     };    
 

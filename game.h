@@ -49,6 +49,9 @@ void restore(Game *game, Moves *historico);
 void verify(Game *game);
 void loadGame(Game *game, const char *ficheiro);
 void saveGame(Game *game, const char *ficheiro);
+bool help(Game *game);
+void autohelp(Game *game);
+void solveGame(Game *game, Moves *historico);
 bool areAllWhiteCellsConnected(Game *game);
 
 #endif

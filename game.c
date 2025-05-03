@@ -201,9 +201,9 @@ void restore(Game *game, Moves *historico) {
 }
 
 // Função para verificar se um símbolo é único na linha
-bool isUniqueInRow(Game *game, int row, char symbol) {
+bool isUniqueInRow(Game *game, int row, int col, char symbol) {
     for (int j = 1; j < game->colunas; j++) {
-        if (game->tabuleiro[row][j] == symbol && game->estado[row][j] == BRANCA) {
+        if (game->tabuleiro[row][j] == tolower(symbol) && j != col) {
             return false;  // Retorna falso se o símbolo já existir na linha
         }
     }
@@ -211,9 +211,9 @@ bool isUniqueInRow(Game *game, int row, char symbol) {
 }
 
 // Função para verificar se um símbolo é único na coluna
-bool isUniqueInColumn(Game *game, int col, char symbol) {
+bool isUniqueInColumn(Game *game, int row, int col, char symbol) {
     for (int i = 1; i < game->linhas; i++) {
-        if (game->tabuleiro[i][col] == symbol && game->estado[i][col] == BRANCA) {
+        if (game->tabuleiro[i][col] == tolower(symbol) && i != row) {
             return false;  // Retorna falso se o símbolo já existir na coluna
         }
     }
@@ -344,7 +344,7 @@ void verify(Game *game) {
         for (int j = 0; j < game->colunas; j++) {
             char symbol = game->tabuleiro[i][j];
             if (game->estado[i][j] == BRANCA) {
-                if (!isUniqueInRow(game, i, symbol) || !isUniqueInColumn(game, j, symbol)) {
+                if (!isUniqueInRow(game, i, j ,symbol) || !isUniqueInColumn(game,i, j, symbol)) {
                     printf("Warning: símbolo '%c' repetido na linha %d ou coluna %c.\n", symbol, i + 1, j + 'a');
                     valid = false;
                 }
@@ -366,4 +366,82 @@ void verify(Game *game) {
     if (valid) {
         printf("O estado do jogo é válido.\n");
     }
+}
+
+bool help(Game *game) {
+    bool changed = false; // Rastreia se houve alterações
+
+    // 1. Riscar todas as letras iguais a uma letra branca na mesma linha e/ou coluna
+    for (int i = 0; i < game->linhas; i++) {
+        for (int j = 0; j < game->colunas; j++) {
+            if (game->estado[i][j] == BRANCA) {
+                char symbol = game->tabuleiro[i][j];
+                if(!isUniqueInColumn(game,i, j, symbol)){
+                    for (int k = 0; k < game->linhas; k++) {
+                        if (game->tabuleiro[k][j] == tolower(symbol) && game->estado[k][j] == NORMAL) {
+                            crossout(game, j + 'a', k + 1); // Risca a célula
+                            changed = true; // Alteração feita
+                        }
+                    }
+                }
+                if(!isUniqueInRow(game, i, j, symbol)){
+                    for (int k = 0; k < game->colunas; k++) {
+                        if (game->tabuleiro[i][k] == tolower(symbol) && game->estado[i][k] == NORMAL) {
+                            crossout(game, k + 'a', i + 1); // Risca a célula
+                            changed = true; // Alteração feita
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Pintar de branco todas as casas vizinhas de uma casa riscada
+    for (int i = 0; i < game->linhas; i++) {
+        for (int j = 0; j < game->colunas; j++) {
+            if (game->estado[i][j] == RISCADA) {
+                int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                for (int d = 0; d < 4; d++) {
+                    int newRow = i + directions[d][0];
+                    int newCol = j + directions[d][1];
+                    if (newRow >= 0 && newRow < game->linhas && newCol >= 0 && newCol < game->colunas && game->estado[newRow][newCol] == NORMAL) {
+                        paint(game, newCol + 'a', newRow + 1); // Pinta a célula vizinha
+                        changed = true; // Alteração feita
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Pintar de branco uma casa quando seria impossível que esta fosse riscada por isolar casas brancas
+    for (int i = 0; i < game->linhas; i++) {
+        for (int j = 0; j < game->colunas; j++) {
+            if (game->estado[i][j] == NORMAL) {
+                // Verificar se riscar esta célula isolaria células brancas
+                if (!areAllWhiteCellsConnected(game)) {
+                    paint(game, j + 'a', i + 1); // Pinta a célula
+                    changed = true; // Alteração feita
+                }
+            }
+        }
+    }
+
+    if (!changed) {
+        printf("Nenhuma alteração foi feita pelo comando help.\n");
+    }
+    return changed; 
+}
+void autohelp(Game *game) {
+    bool changed;
+    do { 
+        changed = help(game); // Executa o comando help
+
+    } while (changed);
+}
+
+void solveGame(Game *game, Moves *historico) {
+    while (historico->tamanho > 0) {
+        restore(game, historico); // Restaura o jogo a partir do histórico
+    }
+
 }
