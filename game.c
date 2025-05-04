@@ -248,9 +248,8 @@ bool areCrossedOutNeighborsWhite(Game *game, int row, int col) {
     return true; // Retorna verdadeiro se todos os vizinhos forem BRANCA
 }
 
+// Função auxiliar para verificar conectividade de células brancas usando BFS
 bool checkWhiteCellsConnectivity(Game *game, bool **visited, int totalWhiteCells) {
-    if (totalWhiteCells == 0) return true; // Nenhuma célula branca a conectar
-
     int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
     int queueSize = game->linhas * game->colunas;
     int *queueRow = malloc(queueSize * sizeof(int));
@@ -258,14 +257,14 @@ bool checkWhiteCellsConnectivity(Game *game, bool **visited, int totalWhiteCells
     int front = 0, rear = 0;
     int visitedCount = 0;
 
-    // Encontrar a primeira célula BRANCA
+    // Encontrar a primeira célula branca
     int startRow = -1, startCol = -1;
     for (int i = 0; i < game->linhas && startRow == -1; i++) {
         for (int j = 0; j < game->colunas; j++) {
-            if (game->estado[i][j] == BRANCA) {
+            if (game->estado[i][j] != RISCADA) {
                 startRow = i;
                 startCol = j;
-                break;
+                j = game->colunas; // Sair do loop interno
             }
         }
     }
@@ -285,7 +284,7 @@ bool checkWhiteCellsConnectivity(Game *game, bool **visited, int totalWhiteCells
             int newRow = currentRow + directions[d][0];
             int newCol = currentCol + directions[d][1];
             if (newRow >= 0 && newRow < game->linhas && newCol >= 0 && newCol < game->colunas) {
-                if (!visited[newRow][newCol] && game->estado[newRow][newCol] == BRANCA) {
+                if (!visited[newRow][newCol] && game->estado[newRow][newCol] != RISCADA) {
                     visited[newRow][newCol] = true;
                     queueRow[rear] = newRow;
                     queueCol[rear++] = newCol;
@@ -310,35 +309,32 @@ bool areAllWhiteCellsConnected(Game *game) {
         visited[i] = calloc(game->colunas, sizeof(bool));
     }
 
-    // Contar células BRANCAS e verificar vizinhos de casas riscadas
+    // Contar células brancas e verificar vizinhos de casas riscadas
     for (int i = 0; i < game->linhas; i++) {
         for (int j = 0; j < game->colunas; j++) {
             if (game->estado[i][j] == RISCADA) {
                 if (!areCrossedOutNeighborsWhite(game, i, j)) {
                     for (int k = 0; k < game->linhas; k++) free(visited[k]);
                     free(visited);
-                    return false;
+                    return false; // Retorna falso se alguma casa riscada tiver vizinhos não brancos
                 }
-            } else if (game->estado[i][j] == BRANCA) {
+            } else if (game->estado[i][j] != RISCADA) {
                 totalWhiteCells++;
             }
         }
     }
 
-    // Verificar conectividade das casas BRANCAS
+    // Verificar conectividade das células brancas
     bool connected = checkWhiteCellsConnectivity(game, visited, totalWhiteCells);
 
-    // Liberar memória
+    // Liberar memória da matriz visited
     for (int i = 0; i < game->linhas; i++) free(visited[i]);
     free(visited);
 
     return connected;
 }
-
-
-
 // Função que verifica se o estado do jogo é válido
-void verify(Game *game) {
+bool verify(Game *game) {
     bool valid = true;  // Inicializa a variável de validade do jogo
     // Verificar unicidade de símbolos e vizinhos de células riscadas
     for (int i = 0; i < game->linhas; i++) {
@@ -362,31 +358,31 @@ void verify(Game *game) {
     if (valid) {
         printf("O estado do jogo é válido.\n");
     }
+
+    return valid;  
 }
 
 bool help(Game *game, Moves *historico) {
-    bool changed = false;
+    bool changed = false; // Rastreia se houve alterações
 
-    // 1. Riscar letras duplicadas na linha ou coluna de uma célula BRANCA
+    // 1. Riscar todas as letras iguais a uma letra branca na mesma linha e/ou coluna
     for (int i = 0; i < game->linhas; i++) {
         for (int j = 0; j < game->colunas; j++) {
             if (game->estado[i][j] == BRANCA) {
                 char symbol = game->tabuleiro[i][j];
-
-                if (!isUniqueInColumn(game, i, j, symbol)) {
+                if(!isUniqueInColumn(game,i, j, symbol)){
                     for (int k = 0; k < game->linhas; k++) {
-                        if (game->tabuleiro[k][j] == tolower(symbol) && game->estado[k][j] == NORMAL) {
-                            crossout(game, j + 'a', k + 1);
-                            changed = true;
+                        if (game->tabuleiro[k][j] == tolower(symbol)) {
+                            crossout(game, j + 'a', k + 1); // Risca a célula
+                            changed = true; // Alteração feita
                         }
                     }
                 }
-
-                if (!isUniqueInRow(game, i, j, symbol)) {
+                if(!isUniqueInRow(game, i, j, symbol)){
                     for (int k = 0; k < game->colunas; k++) {
-                        if (game->tabuleiro[i][k] == tolower(symbol) && game->estado[i][k] == NORMAL) {
-                            crossout(game, k + 'a', i + 1);
-                            changed = true;
+                        if (game->tabuleiro[i][k] == tolower(symbol)) {
+                            crossout(game, k + 'a', i + 1); // Risca a célula
+                            changed = true; // Alteração feita
                         }
                     }
                 }
@@ -394,35 +390,31 @@ bool help(Game *game, Moves *historico) {
         }
     }
 
-    // 2. Pintar de branco as células vizinhas de casas riscadas
+    // 2. Pintar de branco todas as casas vizinhas de uma casa riscada
     for (int i = 0; i < game->linhas; i++) {
         for (int j = 0; j < game->colunas; j++) {
             if (game->estado[i][j] == RISCADA) {
-                int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
                 for (int d = 0; d < 4; d++) {
-                    int ni = i + dirs[d][0];
-                    int nj = j + dirs[d][1];
-                    if (ni >= 0 && ni < game->linhas && nj >= 0 && nj < game->colunas && game->estado[ni][nj] == NORMAL) {
-                        paint(game, nj + 'a', ni + 1, historico);
-                        changed = true;
+                    int newRow = i + directions[d][0];
+                    int newCol = j + directions[d][1];
+                    if (newRow >= 0 && newRow < game->linhas && newCol >= 0 && newCol < game->colunas && game->estado[newRow][newCol] == NORMAL) {
+                        paint(game, newCol + 'a', newRow + 1, historico); // Pinta a célula vizinha
+                        changed = true; // Alteração feita
                     }
                 }
             }
         }
     }
 
-    // 3. Pintar de branco células que, se riscadas, isolariam casas BRANCAS
+    // 3. Pintar de branco uma casa quando seria impossível que esta fosse riscada por isolar casas brancas
     for (int i = 0; i < game->linhas; i++) {
         for (int j = 0; j < game->colunas; j++) {
             if (game->estado[i][j] == NORMAL) {
-                // Simular riscar esta célula
-                game->estado[i][j] = RISCADA;
-                bool stillConnected = areAllWhiteCellsConnected(game);
-                game->estado[i][j] = NORMAL;
-
-                if (!stillConnected) {
-                    paint(game, j + 'a', i + 1, historico);
-                    changed = true;
+                // Verificar se riscar esta célula isolaria células brancas
+                if (!areAllWhiteCellsConnected(game)) {
+                    paint(game, j + 'a', i + 1, historico); // Pinta a célula
+                    changed = true; // Alteração feita
                 }
             }
         }
@@ -431,11 +423,8 @@ bool help(Game *game, Moves *historico) {
     if (!changed) {
         printf("Nenhuma alteração foi feita pelo comando help.\n");
     }
-
-    return changed;
+    return changed; 
 }
-
-
 void autohelp(Game *game, Moves *historico) {
     bool changed;
     do { 
@@ -444,9 +433,23 @@ void autohelp(Game *game, Moves *historico) {
     } while (changed);
 }
 
+
 void solveGame(Game *game, Moves *historico) {
     while (historico->tamanho > 0) {
         restore(game, historico); // Restaura o jogo a partir do histórico
     }
+    saveGame(game, "temp.txt"); // Salva o estado atual do jogo
+    for(int i = 0; i < game->linhas; i++) {
+        for (int j = 0; j < game->colunas; j++) {
+            loadGame(game, "temp.txt"); // Carrega o estado do jogo
+            crossout(game, j + 'a', i + 1); // Risca a célula
+            autohelp(game, historico); // Executa o autoajuda
+            if (verify(game)) {
+                printf("O jogo foi resolvido com sucesso!\n");
+                return; // Retorna se o jogo foi resolvido
+            }
+        }
+    }
+    printf("O jogo não pôde ser resolvido.\n"); // Mensagem de falha na resolução
 
 }

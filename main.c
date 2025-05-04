@@ -94,7 +94,7 @@ void paint_wrapper(Game *game, char *args, Moves *historico) {
             char valorAntigo = game->tabuleiro[lin][col]; // Guarda o valor antigo
             State estadoAntigo = game->estado[lin][col]; // Guarda o estado antigo
 
-            
+
             
             // Adiciona o movimento ao histórico
             adicionarMove(historico, 'b', coluna, linha, valorAntigo, estadoAntigo);
@@ -138,7 +138,7 @@ void restore_wrapper(Game *game, char *args, Moves *historico) {
 void verify_wrapper(Game *game, char *args, Moves *historico) {
   (void)historico; // Parâmetro historico não é utilizado
   (void)args; // Parâmetro args não é utilizado
-    verify(game); // Chama a função verify
+  verify(game); // Chama a função verify
 }
 
 void help_wrapper(Game *game, char *args, Moves *historico) {

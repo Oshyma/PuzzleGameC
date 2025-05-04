@@ -46,11 +46,11 @@ void printTab(Game *game);
 void paint(Game *game, char coluna, int linha, Moves *historico);
 void crossout(Game *game, char coluna, int linha);
 void restore(Game *game, Moves *historico);
-void verify(Game *game);
+bool verify(Game *game);
 void loadGame(Game *game, const char *ficheiro);
 void saveGame(Game *game, const char *ficheiro);
 bool help(Game *game, Moves *historico);
-void autohelp(Game *game, Moves *historico);
+void autohelp(Game *game , Moves *historico);
 void solveGame(Game *game, Moves *historico);
 bool areAllWhiteCellsConnected(Game *game);
 
