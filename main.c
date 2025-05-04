@@ -94,10 +94,11 @@ void paint_wrapper(Game *game, char *args, Moves *historico) {
             char valorAntigo = game->tabuleiro[lin][col]; // Guarda o valor antigo
             State estadoAntigo = game->estado[lin][col]; // Guarda o estado antigo
 
-            paint(game, coluna, linha); // Chama a função paint
+            
             
             // Adiciona o movimento ao histórico
             adicionarMove(historico, 'b', coluna, linha, valorAntigo, estadoAntigo);
+            paint(game, coluna, linha, historico); // Chama a função paint
         }
     } else {
         printf("Argumentos inválidos para paint.\n");
@@ -142,14 +143,12 @@ void verify_wrapper(Game *game, char *args, Moves *historico) {
 
 void help_wrapper(Game *game, char *args, Moves *historico) {
     (void)args; // Parâmetro args não é utilizado
-    (void)historico; // Parâmetro historico não é utilizado
-    help(game); // Chama a função help
+    help(game, historico); // Chama a função help
 }
 
 void autohelp_wrapper(Game *game, char *args, Moves *historico) {
     (void)args; // Parâmetro args não é utilizado
-    (void)historico; // Parâmetro historico não é utilizado
-    autohelp(game); // Chama a função autohelp
+    autohelp(game, historico); // Chama a função autohelp
 }
 
 void solveGame_wrapper(Game *game, char *args, Moves *historico) {

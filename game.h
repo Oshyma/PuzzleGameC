@@ -43,14 +43,14 @@ typedef struct {
 Game* initializeGame(int linhas, int colunas);
 void freeGame(Game *game);
 void printTab(Game *game);
-void paint(Game *game, char coluna, int linha);
+void paint(Game *game, char coluna, int linha, Moves *historico);
 void crossout(Game *game, char coluna, int linha);
 void restore(Game *game, Moves *historico);
 void verify(Game *game);
 void loadGame(Game *game, const char *ficheiro);
 void saveGame(Game *game, const char *ficheiro);
-bool help(Game *game);
-void autohelp(Game *game);
+bool help(Game *game, Moves *historico);
+void autohelp(Game *game, Moves *historico);
 void solveGame(Game *game, Moves *historico);
 bool areAllWhiteCellsConnected(Game *game);
 
